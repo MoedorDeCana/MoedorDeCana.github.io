@@ -54,6 +54,12 @@
         const paredeDir = Bodies.rectangle(cx + cupWidth/2 + wallThickness/2, cy, wallThickness, cupHeight, { isStatic: true, render: renderCopo });
         const teto = Bodies.rectangle(cx, cy - cupHeight/2 - wallThickness/2, cupWidth + wallThickness*2, wallThickness, { isStatic: true, render: renderCopo });
 
+        // Fundindo as 3 peças em uma só:
+        const copoUnico = Body.create({
+            parts: [paredeEsq, paredeDir, teto],
+            isStatic: true
+        });
+
         // 3. BITS DE ALUMÍNIO (As bolinhas de papel)
         const bits = [];
         for (let i = 0; i < 80; i++) {
@@ -76,7 +82,7 @@
             cano.force.y = -engine.world.gravity.y * engine.world.gravity.scale * cano.mass;
         });
 
-        Composite.add(world, [wTop, wBot, wLeft, wRight, mesa, paredeEsq, paredeDir, teto, cano, ...bits]);
+        Composite.add(world, [wTop, wBot, wLeft, wRight, mesa, copoUnico, cano, ...bits]);
 
         // 5. MOUSE (Para arrastar o cano)
         const mouse = Mouse.create(render.canvas);
