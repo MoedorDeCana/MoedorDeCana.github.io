@@ -91,7 +91,7 @@
         render.mouse = mouse;
 
         // 6. FÍSICA DE REPULSÃO E PROTEÇÃO ANTI-VAZAMENTO
-        const MAX_SPEED = 18; // O "freio" de segurança
+        const MAX_SPEED = 10; // O "freio" de segurança
 
         Events.on(engine, 'afterUpdate', () => {
             const canoPos = cano.position;
