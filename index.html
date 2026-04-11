@@ -2,133 +2,237 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Dança do Alumínio - Câmara Selada</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torre de Hanói - Demonstração</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #f0f2f5; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        #info { position: absolute; top: 15px; text-align: center; z-index: 10; background: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 8px; }
-        canvas { box-shadow: 0 4px 15px rgba(0,0,0,0.2); background: white; border-radius: 8px; cursor: grab; }
-        canvas:active { cursor: grabbing; }
+        :root {
+            --bg-color: #f4f4f9;
+            --text-color: #333;
+            --primary: #0056b3;
+            --base-color: #555;
+            --pin-color: #8b4513;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        h1 { margin-bottom: 10px; }
+        
+        .controls {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover:not(:disabled) { background-color: #004494; }
+        button:disabled { background-color: #aaa; cursor: not-allowed; }
+
+        .game-board {
+            display: flex;
+            gap: 60px;
+            padding-bottom: 10px;
+            border-bottom: 15px solid var(--base-color);
+            border-radius: 5px;
+        }
+
+        .tower {
+            width: 160px;
+            height: 300px;
+            display: flex;
+            flex-direction: column-reverse; /* Faz os discos empilharem de baixo para cima */
+            align-items: center;
+            position: relative;
+        }
+
+        /* O pino central */
+        .tower::before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 100%;
+            background-color: var(--pin-color);
+            bottom: 0;
+            z-index: 0;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .disk {
+            height: 30px;
+            border-radius: 15px;
+            margin-bottom: 2px;
+            z-index: 1;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .stats {
+            margin-top: 30px;
+            font-size: 1.5rem;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .highlight { color: var(--primary); font-weight: bold; }
     </style>
 </head>
 <body>
-    <div id="info">
-        <h2>A Dança do Alumínio</h2>
-        <p>Arraste o cano de PVC para perto do copo de vidro.</p>
+
+    <h1>Simulador: Torre de Hanói</h1>
+    
+    <div class="controls">
+        <label for="diskCount"><strong>Número de Discos:</strong></label>
+        <select id="diskCount">
+            <option value="3">3 Discos</option>
+            <option value="4">4 Discos</option>
+            <option value="5">5 Discos</option>
+            <option value="6">6 Discos</option>
+            <option value="7">7 Discos</option>
+        </select>
+        <button id="btnResolver" onclick="iniciarResolucao()">Resolver Automaticamente</button>
+        <button id="btnResetar" onclick="resetar()">Reiniciar</button>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
-    
+    <div class="game-board">
+        <div class="tower" id="towerA"></div>
+        <div class="tower" id="towerB"></div>
+        <div class="tower" id="towerC"></div>
+    </div>
+
+    <div class="stats">
+        Movimentos realizados: <span id="movimentos" class="highlight">0</span> <br>
+        Mínimo esperado (Fórmula 2ⁿ - 1): <span id="esperado" class="highlight">7</span>
+    </div>
+
     <script>
-        const { Engine, Render, Runner, Bodies, Composite, Mouse, MouseConstraint, Events, Body } = Matter;
+        const cores = ['#FF595E', '#FFCA3A', '#8AC926', '#1982C4', '#6A4C93', '#F15BB5', '#00BBF9'];
+        let movesQueue = [];
+        let isAnimating = false;
+        let moveCount = 0;
 
-        const engine = Engine.create();
-        const world = engine.world;
-        const width = 800;
-        const height = 500;
+        // Função para criar o estado inicial
+        function inicializarDiscos() {
+            const numDiscos = parseInt(document.getElementById('diskCount').value);
+            const towerA = document.getElementById('towerA');
+            
+            // Limpa as torres
+            document.querySelectorAll('.tower').forEach(t => t.innerHTML = '');
+            
+            // Atualiza estatísticas
+            moveCount = 0;
+            document.getElementById('movimentos').innerText = moveCount;
+            document.getElementById('esperado').innerText = Math.pow(2, numDiscos) - 1;
 
-        const render = Render.create({
-            element: document.body,
-            engine: engine,
-            options: { width, height, wireframes: false, background: '#fff' }
-        });
-
-        // 1. LIMITES INVISÍVEIS DA TELA (Para o cano não sumir)
-        const wTop = Bodies.rectangle(width/2, -50, width+100, 100, { isStatic: true });
-        const wBot = Bodies.rectangle(width/2, height+50, width+100, 100, { isStatic: true });
-        const wLeft = Bodies.rectangle(-50, height/2, 100, height+100, { isStatic: true });
-        const wRight = Bodies.rectangle(width+50, height/2, 100, height+100, { isStatic: true });
-
-        // 2. A MESA E O COPO (Paredes super grossas para evitar o "tunneling")
-        const mesa = Bodies.rectangle(width/2, 450, width, 100, { isStatic: true, render: { fillStyle: '#bdc3c7' } });
-        
-        const wallThickness = 80; // Espessura massiva para segurança física
-        const cupWidth = 200;
-        const cupHeight = 160;
-        const cx = width / 2;
-        const cy = 400 - cupHeight / 2;
-
-        // O vidro do copo (visualizado de forma semi-transparente)
-        const renderCopo = { fillStyle: 'rgba(149, 165, 166, 0.4)', strokeStyle: '#7f8c8d', lineWidth: 2 };
-        
-        const paredeEsq = Bodies.rectangle(cx - cupWidth/2 - wallThickness/2, cy, wallThickness, cupHeight, { isStatic: true, render: renderCopo });
-        const paredeDir = Bodies.rectangle(cx + cupWidth/2 + wallThickness/2, cy, wallThickness, cupHeight, { isStatic: true, render: renderCopo });
-        const teto = Bodies.rectangle(cx, cy - cupHeight/2 - wallThickness/2, cupWidth + wallThickness*2, wallThickness, { isStatic: true, render: renderCopo });
-
-        // Fundindo as 3 peças em uma só:
-        const copoUnico = Body.create({
-            parts: [paredeEsq, paredeDir, teto],
-            isStatic: true
-        });
-
-        // 3. BITS DE ALUMÍNIO (As bolinhas de papel)
-        const bits = [];
-        for (let i = 0; i < 80; i++) {
-            const bit = Bodies.rectangle(cx - cupWidth/3 + Math.random()*(cupWidth*0.6), 380 - Math.random()*20, 8, 8, {
-                restitution: 0.8, // Quão "elástico" é o pulo
-                friction: 0.05,
-                density: 0.001,
-                render: { fillStyle: '#95a5a6' }
-            });
-            bits.push(bit);
+            // Cria os discos (do maior para o menor para o flex column-reverse cuidar do resto)
+            for (let i = numDiscos; i >= 1; i--) {
+                const disk = document.createElement('div');
+                disk.classList.add('disk');
+                // Calcula a largura proporcionalmente
+                disk.style.width = `${40 + (i * 16)}px`; 
+                disk.style.backgroundColor = cores[i - 1];
+                disk.id = `disk-${i}`;
+                towerA.appendChild(disk);
+            }
         }
 
-        // 4. CANO DE PVC (Arrastável, sem gravidade)
-        const cano = Bodies.rectangle(150, 200, 160, 30, {
-            render: { fillStyle: '#e67e22', strokeStyle: '#d35400', lineWidth: 3 }
-        });
-        
-        // Mantém o cano flutuando (cancela a gravidade apenas para ele)
-        Events.on(engine, 'beforeUpdate', () => {
-            cano.force.y = -engine.world.gravity.y * engine.world.gravity.scale * cano.mass;
-        });
+        // Lógica recursiva padrão da Torre de Hanói
+        function calcularMovimentos(n, origem, destino, auxiliar) {
+            if (n === 1) {
+                movesQueue.push({ from: origem, to: destino });
+                return;
+            }
+            calcularMovimentos(n - 1, origem, auxiliar, destino);
+            movesQueue.push({ from: origem, to: destino });
+            calcularMovimentos(n - 1, auxiliar, destino, origem);
+        }
 
-        Composite.add(world, [wTop, wBot, wLeft, wRight, mesa, copoUnico, cano, ...bits]);
+        // Função assíncrona para animar os movimentos um por um
+        async function processarMovimentos() {
+            isAnimating = true;
+            document.getElementById('btnResolver').disabled = true;
+            document.getElementById('diskCount').disabled = true;
 
-        // 5. MOUSE (Para arrastar o cano)
-        const mouse = Mouse.create(render.canvas);
-        const mConstraint = MouseConstraint.create(engine, { mouse: mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
-        Composite.add(world, mConstraint);
-        render.mouse = mouse;
+            for (let i = 0; i < movesQueue.length; i++) {
+                if (!isAnimating) break; // Permite interrupção pelo botão de reset
 
-        // 6. FÍSICA DE REPULSÃO E PROTEÇÃO ANTI-VAZAMENTO
-        const MAX_SPEED = 10; // O "freio" de segurança
+                const move = movesQueue[i];
+                const sourceTower = document.getElementById(move.from);
+                const targetTower = document.getElementById(move.to);
+                
+                // Pega o disco do topo da torre de origem (último filho no DOM devido ao column-reverse)
+                const disk = sourceTower.lastElementChild;
+                
+                // Adiciona na torre de destino (vai automaticamente para o topo da pilha)
+                targetTower.appendChild(disk);
+                
+                moveCount++;
+                document.getElementById('movimentos').innerText = moveCount;
 
-        Events.on(engine, 'afterUpdate', () => {
-            const canoPos = cano.position;
-            const dist = Math.hypot(canoPos.x - cx, canoPos.y - cy);
-
-            // Calcula a força baseada na distância do cano
-            let power = 0;
-            if (dist < 300) {
-                power = (300 - dist) * 0.00003; 
+                // Pausa para a animação (800ms)
+                await new Promise(resolve => setTimeout(resolve, 800));
             }
 
-            bits.forEach(bit => {
-                // Efeito elétrico: Quando o cano aproxima, aplica força
-                if (power > 0) {
-                    // Força joga os pedacinhos para cima e pros lados
-                    const fx = (Math.random() - 0.5) * power;
-                    const fy = -Math.random() * power * 1.5;
-                    Body.applyForce(bit, bit.position, { x: fx, y: fy });
-                    
-                    // Ficam azuis para indicar que estão polarizados/carregados
-                    bit.render.fillStyle = '#3498db'; 
-                } else {
-                    // Voltam à cor normal quando o cano se afasta
-                    bit.render.fillStyle = '#95a5a6'; 
-                }
+            document.getElementById('btnResolver').disabled = false;
+            document.getElementById('diskCount').disabled = false;
+            isAnimating = false;
+        }
 
-                // SISTEMA ANTI-TUNNELING (Impede de atravessar o vidro)
-                const speed = Math.hypot(bit.velocity.x, bit.velocity.y);
-                if (speed > MAX_SPEED) {
-                    const scale = MAX_SPEED / speed;
-                    Body.setVelocity(bit, { x: bit.velocity.x * scale, y: bit.velocity.y * scale });
-                }
-            });
-        });
+        function iniciarResolucao() {
+            if (isAnimating) return;
+            resetar();
+            const numDiscos = parseInt(document.getElementById('diskCount').value);
+            movesQueue = [];
+            
+            // O algoritmo recursivo alimenta a fila de movimentos (movesQueue)
+            calcularMovimentos(numDiscos, 'towerA', 'towerC', 'towerB');
+            
+            // Inicia a execução visual da fila
+            processarMovimentos();
+        }
 
-        Render.run(render);
-        Runner.run(Runner.create(), engine);
+        function resetar() {
+            isAnimating = false; // Interrompe a animação atual se houver
+            inicializarDiscos();
+            document.getElementById('btnResolver').disabled = false;
+            document.getElementById('diskCount').disabled = false;
+        }
+
+        // Event listener para quando o usuário mudar a quantidade de discos
+        document.getElementById('diskCount').addEventListener('change', resetar);
+
+        // Inicializa a tela na primeira carga
+        window.onload = inicializarDiscos;
     </script>
 </body>
 </html>
