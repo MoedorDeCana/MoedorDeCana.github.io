@@ -3,236 +3,573 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Torre de Hanói - Demonstração</title>
+    <title>Indução Matemática - Projeto Integrador</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
         :root {
-            --bg-color: #f4f4f9;
-            --text-color: #333;
-            --primary: #0056b3;
-            --base-color: #555;
-            --pin-color: #8b4513;
+            /* Paleta Geral */
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-color: #334155;
+            
+            /* Hanói */
+            --base-color: #334155;
+            --pin-color: #64748b;
+
+            /* Diagonais */
+            --poly-edge: #3b82f6;
+            --new-vertex: #10b981;
+            --old-edge: #f59e0b;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 40px 20px;
+            padding: 0 20px 40px 20px;
             margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
         }
 
-        h1 { margin-bottom: 10px; }
+        /* --- Cabeçalho e Abas --- */
+        header {
+            width: 100%;
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+            background-color: rgba(30, 41, 59, 0.8);
+        }
+
+        .doctum-tag {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        h1 { 
+            margin: 10px 0 20px 0; 
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.2rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 2px solid var(--border-color);
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        /* --- Contêineres de cada App --- */
+        .app-section {
+            display: none; /* Oculto por padrão, ativado via JS */
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1000px;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .app-section.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .subtitle { color: var(--text-muted); margin-bottom: 30px; font-size: 1rem; text-align: center; }
         
         .controls {
-            background: white;
-            padding: 15px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 40px;
-            display: flex;
-            gap: 20px;
-            align-items: center;
+            background: var(--surface-color); padding: 20px 30px; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid var(--border-color);
+            margin-bottom: 40px; display: flex; gap: 20px; align-items: center;
+            flex-wrap: wrap; justify-content: center; width: 100%; box-sizing: border-box;
         }
 
-        select, button {
-            padding: 10px 15px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
+        .control-group { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        label { color: var(--text-muted); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
+        
+        input[type="number"] { background-color: var(--bg-color); color: var(--text-main); padding: 10px; font-size: 16px; border-radius: 8px; border: 1px solid var(--border-color); width: 70px; text-align: center; outline: none; }
+        input[type="range"] { width: 150px; margin-top: 5px; cursor: pointer; }
+        
+        button.action-btn { padding: 12px 20px; font-size: 15px; border-radius: 8px; background-color: var(--accent); color: white; border: none; cursor: pointer; font-weight: 600; margin-top: 15px; transition: 0.2s; }
+        button.action-btn:hover:not(:disabled) { background-color: var(--accent-hover); transform: translateY(-2px);}
+        button.action-btn:disabled { background-color: var(--border-color); color: var(--text-muted); cursor: not-allowed; }
+        
+        button.btn-green { background-color: var(--new-vertex); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+        button.btn-green:hover { background-color: #059669; }
+        
+        .btn-outline { background-color: transparent !important; border: 1px solid var(--border-color) !important; box-shadow: none !important;}
+        .btn-outline:hover:not(:disabled) { background-color: var(--surface-color) !important; }
 
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
-        }
+        /* --- Estilos da Torre de Hanói --- */
+        .hanoi-board { display: flex; gap: 40px; padding-bottom: 5px; border-bottom: 8px solid var(--base-color); border-radius: 4px; position: relative; justify-content: center; min-height: 200px; width: 100%;}
+        .tower { display: flex; flex-direction: column-reverse; align-items: center; position: relative; border-radius: 10px; transition: background-color 0.2s; }
+        .tower.drag-over { background-color: rgba(255, 255, 255, 0.08); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
+        .tower::before { content: ''; position: absolute; width: 12px; height: 100%; background: linear-gradient(to top, var(--base-color), var(--pin-color)); bottom: 0; z-index: 0; border-radius: 6px 6px 0 0; }
+        .disk { height: 24px; border-radius: 12px; margin-bottom: 3px; z-index: 2; box-shadow: inset 0 2px 4px rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.4); cursor: grab; touch-action: none; position: relative; }
+        .disk:active { cursor: grabbing; }
+        .disk.dragging { position: fixed; z-index: 9999; pointer-events: none; transform: scale(1.1); box-shadow: 0 15px 25px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.8); opacity: 0.9; }
 
-        button:hover:not(:disabled) { background-color: #004494; }
-        button:disabled { background-color: #aaa; cursor: not-allowed; }
+        /* --- Estilos de Diagonais --- */
+        .diag-board { display: flex; gap: 40px; align-items: center; flex-wrap: wrap; justify-content: center; width: 100%; }
+        canvas { background: var(--surface-color); border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        
+        /* --- Estatísticas Gerais --- */
+        .stats-panel { background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 25px rgba(0,0,0,0.5); min-width: 300px; display: flex; flex-direction: column; gap: 15px; margin-top: 30px;}
+        .hanoi-stats { text-align: center; font-size: 1.2rem; color: var(--text-muted); }
+        .hanoi-stats span { color: var(--text-main); font-size: 1.4rem; }
+        
+        .stat-item { display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+        .stat-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .stat-label { color: var(--text-muted); }
+        .stat-value { font-weight: 700; font-size: 1.4rem; }
 
-        .game-board {
-            display: flex;
-            gap: 60px;
-            padding-bottom: 10px;
-            border-bottom: 15px solid var(--base-color);
-            border-radius: 5px;
-        }
+        .hl-green { color: #10b981 !important; font-weight: 700; }
+        .hl-blue { color: var(--poly-edge); }
+        .hl-orange { color: var(--old-edge); }
+        .error-msg { color: #ef4444; font-size: 0.9rem; margin-top: 10px; min-height: 20px;}
 
-        .tower {
-            width: 160px;
-            height: 300px;
-            display: flex;
-            flex-direction: column-reverse; /* Faz os discos empilharem de baixo para cima */
-            align-items: center;
-            position: relative;
-        }
-
-        /* O pino central */
-        .tower::before {
-            content: '';
-            position: absolute;
-            width: 12px;
-            height: 100%;
-            background-color: var(--pin-color);
-            bottom: 0;
-            z-index: 0;
-            border-radius: 6px 6px 0 0;
-        }
-
-        .disk {
-            height: 30px;
-            border-radius: 15px;
-            margin-bottom: 2px;
-            z-index: 1;
-            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-        }
-
-        .stats {
-            margin-top: 30px;
-            font-size: 1.5rem;
-            background: white;
-            padding: 15px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .highlight { color: var(--primary); font-weight: bold; }
+        .math-box { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px; font-family: monospace; font-size: 1.2rem; color: #cbd5e1; border: 1px dashed var(--border-color); }
     </style>
 </head>
 <body>
 
-    <h1>Simulador: Torre de Hanói</h1>
-    
-    <div class="controls">
-        <label for="diskCount"><strong>Número de Discos:</strong></label>
-        <select id="diskCount">
-            <option value="3">3 Discos</option>
-            <option value="4">4 Discos</option>
-            <option value="5">5 Discos</option>
-            <option value="6">6 Discos</option>
-            <option value="7">7 Discos</option>
-        </select>
-        <button id="btnResolver" onclick="iniciarResolucao()">Resolver Automaticamente</button>
-        <button id="btnResetar" onclick="resetar()">Reiniciar</button>
+    <header>
+        <div class="doctum-tag">Ciência da Computação • Doctum</div>
+        <h1>Indução Matemática na Prática - Grupo 3</h1>
+        <nav class="tabs">
+            <button class="tab-btn active" id="btnTabHanoi" onclick="switchApp('hanoi')">1. Torre de Hanói</button>
+            <button class="tab-btn" id="btnTabDiagonais" onclick="switchApp('diagonais')">2. Diagonais de Polígonos</button>
+        </nav>
+    </header>
+
+    <div id="app-hanoi" class="app-section active">
+        <p class="subtitle">Arraste os discos manualmente para jogar ou assista ao algoritmo resolvendo.</p>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="diskCount">Discos</label>
+                <input type="number" id="diskCount" min="3" max="12" value="4">
+            </div>
+            <div class="control-group">
+                <label for="speedControl">Velocidade (Auto)</label>
+                <input type="range" id="speedControl" min="1" max="10" value="7">
+            </div>
+            <button class="action-btn" id="btnResolver" onclick="hanoiIniciar()">Resolver Automaticamente</button>
+            <button class="action-btn btn-outline" id="btnResetarHanoi" onclick="hanoiResetar()">Reiniciar</button>
+        </div>
+
+        <div class="hanoi-board" id="gameBoard">
+            <div class="tower" id="towerA"></div>
+            <div class="tower" id="towerB"></div>
+            <div class="tower" id="towerC"></div>
+        </div>
+
+        <div class="stats-panel hanoi-stats">
+            Movimentos realizados: <span id="hanoiMovimentos" class="hl-green">0</span> <br>
+            Mínimo esperado (2ⁿ - 1): <span id="hanoiEsperado" class="hl-green">15</span>
+            <div id="hanoiMensagemErro" class="error-msg"></div>
+        </div>
     </div>
 
-    <div class="game-board">
-        <div class="tower" id="towerA"></div>
-        <div class="tower" id="towerB"></div>
-        <div class="tower" id="towerC"></div>
-    </div>
 
-    <div class="stats">
-        Movimentos realizados: <span id="movimentos" class="highlight">0</span> <br>
-        Mínimo esperado (Fórmula 2ⁿ - 1): <span id="esperado" class="highlight">7</span>
+    <div id="app-diagonais" class="app-section">
+        <p class="subtitle">Acompanhe a criação de novas diagonais e a nomenclatura dos vértices.</p>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="sidesSlider">Número de Lados (n): <span id="sidesDisplay" style="color:white; font-size:1.1rem;">3</span></label>
+                <input type="range" id="sidesSlider" min="3" max="20" value="3">
+            </div>
+            <button class="action-btn btn-green" id="btnInduction">Passo Indutivo (+1 Vértice)</button>
+        </div>
+
+        <div class="diag-board">
+            <canvas id="polyCanvas" width="500" height="500"></canvas>
+
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <span class="stat-label">Lados (n):</span>
+                    <span class="stat-value hl-blue" id="statN">3</span>
+                </div>
+                <div class="stat-item" id="rowOldDiags" style="display: none;">
+                    <span class="stat-label">Diagonais Antigas:</span>
+                    <span class="stat-value" id="statOldDiags">0</span>
+                </div>
+                <div class="stat-item" id="rowNewDiags" style="display: none;">
+                    <span class="stat-label">Novas do Vértice (k-2):</span>
+                    <span class="stat-value hl-green" id="statNewDiags">0</span>
+                </div>
+                <div class="stat-item" id="rowOldEdge" style="display: none;">
+                    <span class="stat-label">Antigo Lado (virou diag.):</span>
+                    <span class="stat-value hl-orange" id="statOldEdge">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total de Diagonais:</span>
+                    <span class="stat-value" id="statTotalDiags" style="color: white;">0</span>
+                </div>
+
+                <div class="math-box">
+                    Dn = <span class="hl-blue">n</span>(<span class="hl-blue">n</span>-3)/2 <br>
+                    Resultado: <strong id="statFormula" style="color: white;">0</strong>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        const cores = ['#FF595E', '#FFCA3A', '#8AC926', '#1982C4', '#6A4C93', '#F15BB5', '#00BBF9'];
-        let movesQueue = [];
-        let isAnimating = false;
-        let moveCount = 0;
+        // --- GERENCIADOR DE ABAS ---
+        function switchApp(appId) {
+            document.getElementById('app-hanoi').classList.remove('active');
+            document.getElementById('app-diagonais').classList.remove('active');
+            document.getElementById('btnTabHanoi').classList.remove('active');
+            document.getElementById('btnTabDiagonais').classList.remove('active');
 
-        // Função para criar o estado inicial
-        function inicializarDiscos() {
-            const numDiscos = parseInt(document.getElementById('diskCount').value);
+            if (appId === 'hanoi') {
+                document.getElementById('app-hanoi').classList.add('active');
+                document.getElementById('btnTabHanoi').classList.add('active');
+            } else {
+                document.getElementById('app-diagonais').classList.add('active');
+                document.getElementById('btnTabDiagonais').classList.add('active');
+                diagDraw(); // Força o redesenho para garantir que o canvas renderize na aba certa
+            }
+        }
+
+        // ==========================================
+        // LÓGICA: TORRE DE HANÓI
+        // ==========================================
+        const hCores = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e', '#cbd5e1'];
+        let hMovesQueue = [];
+        let hIsAnimating = false;
+        let hMoveCount = 0;
+        
+        let draggedDisk = null;
+        let sourceTower = null;
+        let shiftX = 0, shiftY = 0;
+        let currentHoveredTower = null;
+
+        function hanoiInit() {
+            let input = document.getElementById('diskCount');
+            let n = parseInt(input.value);
+            if (n > 12) { n = 12; input.value = 12; } else if (n < 1) { n = 1; input.value = 1; }
+
             const towerA = document.getElementById('towerA');
-            
-            // Limpa as torres
-            document.querySelectorAll('.tower').forEach(t => t.innerHTML = '');
-            
-            // Atualiza estatísticas
-            moveCount = 0;
-            document.getElementById('movimentos').innerText = moveCount;
-            document.getElementById('esperado').innerText = Math.pow(2, numDiscos) - 1;
+            const h = Math.max(160, (n * 27) + 60); 
+            const w = 40 + (n * 14) + 20;
 
-            // Cria os discos (do maior para o menor para o flex column-reverse cuidar do resto)
-            for (let i = numDiscos; i >= 1; i--) {
+            document.querySelectorAll('.tower').forEach(t => {
+                t.innerHTML = '';
+                t.style.height = `${h}px`;
+                t.style.width = `${w}px`;
+            });
+            
+            hMoveCount = 0;
+            document.getElementById('hanoiMovimentos').innerText = hMoveCount;
+            document.getElementById('hanoiEsperado').innerText = Math.pow(2, n) - 1;
+            document.getElementById('hanoiMensagemErro').innerText = "";
+
+            for (let i = n; i >= 1; i--) {
                 const disk = document.createElement('div');
                 disk.classList.add('disk');
-                // Calcula a largura proporcionalmente
-                disk.style.width = `${40 + (i * 16)}px`; 
-                disk.style.backgroundColor = cores[i - 1];
-                disk.id = `disk-${i}`;
+                disk.style.width = `${40 + (i * 14)}px`;
+                disk.style.backgroundColor = hCores[(i - 1) % hCores.length];
+                disk.dataset.tamanho = i; 
+                disk.addEventListener('pointerdown', hanoiPointerDown);
                 towerA.appendChild(disk);
             }
         }
 
-        // Lógica recursiva padrão da Torre de Hanói
-        function calcularMovimentos(n, origem, destino, auxiliar) {
-            if (n === 1) {
-                movesQueue.push({ from: origem, to: destino });
-                return;
-            }
-            calcularMovimentos(n - 1, origem, auxiliar, destino);
-            movesQueue.push({ from: origem, to: destino });
-            calcularMovimentos(n - 1, auxiliar, destino, origem);
+        function hanoiPointerDown(e) {
+            if (hIsAnimating || (e.button !== 0 && e.type.includes('mouse'))) return;
+            const disk = e.target;
+            sourceTower = disk.parentElement;
+            if (sourceTower.lastElementChild !== disk) return;
+
+            document.getElementById('hanoiMensagemErro').innerText = "";
+            draggedDisk = disk;
+
+            const rect = disk.getBoundingClientRect();
+            shiftX = e.clientX - rect.left;
+            shiftY = e.clientY - rect.top;
+
+            disk.classList.add('dragging');
+            document.body.append(disk); 
+            hanoiMover(e.pageX, e.pageY);
+
+            document.addEventListener('pointermove', hanoiPointerMove);
+            document.addEventListener('pointerup', hanoiPointerUp);
         }
 
-        // Função assíncrona para animar os movimentos um por um
-        async function processarMovimentos() {
-            isAnimating = true;
+        function hanoiMover(pageX, pageY) {
+            draggedDisk.style.left = pageX - shiftX + 'px';
+            draggedDisk.style.top = pageY - shiftY + 'px';
+        }
+
+        function hanoiPointerMove(e) {
+            hanoiMover(e.pageX, e.pageY);
+            draggedDisk.style.visibility = 'hidden';
+            let elem = document.elementFromPoint(e.clientX, e.clientY);
+            draggedDisk.style.visibility = 'visible';
+            if (!elem) return;
+
+            let tower = elem.closest('.tower');
+            if (currentHoveredTower !== tower) {
+                if (currentHoveredTower) currentHoveredTower.classList.remove('drag-over');
+                currentHoveredTower = tower;
+                if (currentHoveredTower) currentHoveredTower.classList.add('drag-over');
+            }
+        }
+
+        function hanoiPointerUp(e) {
+            document.removeEventListener('pointermove', hanoiPointerMove);
+            document.removeEventListener('pointerup', hanoiPointerUp);
+            if (!draggedDisk) return;
+
+            draggedDisk.classList.remove('dragging');
+            draggedDisk.style.left = ''; draggedDisk.style.top = '';
+            if (currentHoveredTower) currentHoveredTower.classList.remove('drag-over');
+
+            if (currentHoveredTower) {
+                const topDisk = currentHoveredTower.lastElementChild;
+                const movido = parseInt(draggedDisk.dataset.tamanho);
+                const destino = topDisk ? parseInt(topDisk.dataset.tamanho) : Infinity;
+
+                if (currentHoveredTower === sourceTower) {
+                    sourceTower.appendChild(draggedDisk);
+                } else if (movido < destino) {
+                    currentHoveredTower.appendChild(draggedDisk);
+                    hMoveCount++;
+                    document.getElementById('hanoiMovimentos').innerText = hMoveCount;
+                    hanoiVerificar();
+                } else {
+                    sourceTower.appendChild(draggedDisk);
+                    document.getElementById('hanoiMensagemErro').innerText = "Regra violada: Um disco maior não pode ficar sobre um menor!";
+                }
+            } else {
+                sourceTower.appendChild(draggedDisk);
+            }
+
+            draggedDisk = null; sourceTower = null; currentHoveredTower = null;
+        }
+
+        function hanoiVerificar() {
+            const n = parseInt(document.getElementById('diskCount').value);
+            const towerB_discos = document.getElementById('towerB').children.length;
+            const towerC_discos = document.getElementById('towerC').children.length;
+            
+            // Verifica se a torre do meio OU a torre da direita estão com todos os discos
+            if (towerB_discos === n || towerC_discos === n) {
+                setTimeout(() => alert(`Vitória! Resolvido com ${n} discos em ${hMoveCount} movimentos.`), 100);
+            }
+        }
+
+        function hanoiCalc(n, orig, dest, aux) {
+            if (n === 1) { hMovesQueue.push({ from: orig, to: dest }); return; }
+            hanoiCalc(n - 1, orig, aux, dest);
+            hMovesQueue.push({ from: orig, to: dest });
+            hanoiCalc(n - 1, aux, dest, orig);
+        }
+
+        async function hanoiProcessar() {
+            hIsAnimating = true;
             document.getElementById('btnResolver').disabled = true;
             document.getElementById('diskCount').disabled = true;
 
-            for (let i = 0; i < movesQueue.length; i++) {
-                if (!isAnimating) break; // Permite interrupção pelo botão de reset
+            for (let i = 0; i < hMovesQueue.length; i++) {
+                if (!hIsAnimating) break; 
+                const move = hMovesQueue[i];
+                const source = document.getElementById(move.from);
+                const target = document.getElementById(move.to);
+                target.appendChild(source.lastElementChild);
+                
+                hMoveCount++;
+                document.getElementById('hanoiMovimentos').innerText = hMoveCount;
 
-                const move = movesQueue[i];
-                const sourceTower = document.getElementById(move.from);
-                const targetTower = document.getElementById(move.to);
-                
-                // Pega o disco do topo da torre de origem (último filho no DOM devido ao column-reverse)
-                const disk = sourceTower.lastElementChild;
-                
-                // Adiciona na torre de destino (vai automaticamente para o topo da pilha)
-                targetTower.appendChild(disk);
-                
-                moveCount++;
-                document.getElementById('movimentos').innerText = moveCount;
-
-                // Pausa para a animação (800ms)
-                await new Promise(resolve => setTimeout(resolve, 800));
+                const speed = parseInt(document.getElementById('speedControl').value);
+                const delay = speed === 10 ? 30 : (11 - speed) * 50;
+                await new Promise(res => setTimeout(res, delay));
             }
 
             document.getElementById('btnResolver').disabled = false;
             document.getElementById('diskCount').disabled = false;
-            isAnimating = false;
+            hIsAnimating = false;
+            hanoiVerificar();
         }
 
-        function iniciarResolucao() {
-            if (isAnimating) return;
-            resetar();
-            const numDiscos = parseInt(document.getElementById('diskCount').value);
-            movesQueue = [];
-            
-            // O algoritmo recursivo alimenta a fila de movimentos (movesQueue)
-            calcularMovimentos(numDiscos, 'towerA', 'towerC', 'towerB');
-            
-            // Inicia a execução visual da fila
-            processarMovimentos();
+        function hanoiIniciar() {
+            if (hIsAnimating) return;
+            hanoiResetar(); 
+            const n = parseInt(document.getElementById('diskCount').value);
+            hMovesQueue = [];
+            hanoiCalc(n, 'towerA', 'towerC', 'towerB');
+            hanoiProcessar();
         }
 
-        function resetar() {
-            isAnimating = false; // Interrompe a animação atual se houver
-            inicializarDiscos();
+        function hanoiResetar() {
+            hIsAnimating = false; 
+            hanoiInit();
             document.getElementById('btnResolver').disabled = false;
             document.getElementById('diskCount').disabled = false;
         }
+        document.getElementById('diskCount').addEventListener('input', hanoiResetar);
 
-        // Event listener para quando o usuário mudar a quantidade de discos
-        document.getElementById('diskCount').addEventListener('change', resetar);
+        // ==========================================
+        // LÓGICA: DIAGONAIS DE POLÍGONOS
+        // ==========================================
+        const dCanvas = document.getElementById('polyCanvas');
+        const dCtx = dCanvas.getContext('2d');
+        const dSlider = document.getElementById('sidesSlider');
+        const dBtnInduction = document.getElementById('btnInduction');
+        
+        let dNum = 3;
+        let dIsHighlighting = false;
 
-        // Inicializa a tela na primeira carga
-        window.onload = inicializarDiscos;
+        const dpr = window.devicePixelRatio || 1;
+        dCanvas.width = 500 * dpr; dCanvas.height = 500 * dpr;
+        dCtx.scale(dpr, dpr);
+        dCanvas.style.width = '500px'; dCanvas.style.height = '500px';
+
+        const cX = 250, cY = 250, dRadius = 170;
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        function diagUI() {
+            document.getElementById('sidesDisplay').innerText = dNum;
+            document.getElementById('statN').innerText = dNum;
+            
+            const total = (dNum * (dNum - 3)) / 2;
+            document.getElementById('statTotalDiags').innerText = total;
+            document.getElementById('statFormula').innerText = total;
+
+            if (dIsHighlighting && dNum > 3) {
+                const k = dNum - 1;
+                document.getElementById('rowOldDiags').style.display = 'flex';
+                document.getElementById('rowNewDiags').style.display = 'flex';
+                document.getElementById('rowOldEdge').style.display = 'flex';
+                document.getElementById('statOldDiags').innerText = (k * (k - 3)) / 2;
+                document.getElementById('statNewDiags').innerText = k - 2; 
+                document.getElementById('statOldEdge').innerText = "1";    
+            } else {
+                document.getElementById('rowOldDiags').style.display = 'none';
+                document.getElementById('rowNewDiags').style.display = 'none';
+                document.getElementById('rowOldEdge').style.display = 'none';
+            }
+        }
+
+        function diagGetVerts(sides) {
+            const v = [];
+            for (let i = 0; i < sides; i++) {
+                const ang = (i * 2 * Math.PI / sides) - (Math.PI / 2);
+                v.push({ x: cX + dRadius * Math.cos(ang), y: cY + dRadius * Math.sin(ang), angle: ang });
+            }
+            return v;
+        }
+
+        function diagDraw() {
+            dCtx.clearRect(0, 0, 500, 500);
+            const v = diagGetVerts(dNum);
+
+            for (let i = 0; i < dNum; i++) {
+                for (let j = i + 2; j < dNum; j++) {
+                    if (i === 0 && j === dNum - 1) continue; 
+                    dCtx.beginPath();
+                    dCtx.moveTo(v[i].x, v[i].y);
+                    dCtx.lineTo(v[j].x, v[j].y);
+
+                    if (dIsHighlighting && dNum > 3) {
+                        if (i === 0) { dCtx.strokeStyle = '#10b981'; dCtx.lineWidth = 2.5; } 
+                        else if (i === 1 && j === dNum - 1) { dCtx.strokeStyle = '#f59e0b'; dCtx.lineWidth = 3.5; dCtx.setLineDash([6, 6]); } 
+                        else { dCtx.strokeStyle = 'rgba(71, 85, 105, 0.3)'; dCtx.lineWidth = 1; }
+                    } else {
+                        dCtx.strokeStyle = '#475569'; dCtx.lineWidth = 1;
+                    }
+                    dCtx.stroke(); dCtx.setLineDash([]); 
+                }
+            }
+
+            dCtx.beginPath();
+            dCtx.moveTo(v[0].x, v[0].y);
+            for (let i = 1; i < dNum; i++) dCtx.lineTo(v[i].x, v[i].y);
+            dCtx.closePath();
+            dCtx.strokeStyle = '#3b82f6'; dCtx.lineWidth = 3; dCtx.stroke();
+
+            for (let i = 0; i < dNum; i++) {
+                dCtx.beginPath();
+                dCtx.arc(v[i].x, v[i].y, 6, 0, 2 * Math.PI);
+                if (dIsHighlighting && i === 0) {
+                    dCtx.fillStyle = '#10b981'; dCtx.shadowColor = '#10b981'; dCtx.shadowBlur = 12;
+                } else {
+                    dCtx.fillStyle = '#f8fafc'; dCtx.shadowBlur = 0;
+                }
+                dCtx.fill(); dCtx.shadowBlur = 0; 
+
+                const letra = alphabet[i % 26]; 
+                const off = 25; 
+                dCtx.fillStyle = (dIsHighlighting && i === 0) ? '#10b981' : '#cbd5e1';
+                dCtx.font = 'bold 18px Inter, sans-serif'; dCtx.textAlign = 'center'; dCtx.textBaseline = 'middle';
+                dCtx.fillText(letra, cX + (dRadius + off) * Math.cos(v[i].angle), cY + (dRadius + off) * Math.sin(v[i].angle));
+            }
+        }
+
+        dSlider.addEventListener('input', (e) => {
+            dNum = parseInt(e.target.value);
+            dIsHighlighting = false; 
+            diagUI(); diagDraw();
+        });
+
+        dBtnInduction.addEventListener('click', () => {
+            if (dNum < 20) {
+                dNum++; dSlider.value = dNum;
+                dIsHighlighting = true; 
+                diagUI(); diagDraw();
+            }
+        });
+
+        // Inicializa Ambos
+        window.onload = () => {
+            hanoiInit();
+            diagUI(); diagDraw();
+        };
     </script>
 </body>
 </html>
