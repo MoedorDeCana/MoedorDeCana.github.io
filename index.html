@@ -190,7 +190,7 @@
         <div class="controls">
             <div class="control-group">
                 <label for="diskCount">Discos</label>
-                <input type="number" id="diskCount" min="3" max="12" value="4">
+                <input type="number" id="diskCount" min="3" max="300" value="4">
             </div>
             <div class="control-group">
                 <label for="speedControl">Velocidade (Auto)</label>
@@ -292,7 +292,7 @@
         function hanoiInit() {
             let input = document.getElementById('diskCount');
             let n = parseInt(input.value);
-            if (n > 12) { n = 12; input.value = 12; } else if (n < 1) { n = 1; input.value = 1; }
+            if (n > 300) { n = 300; input.value = 300; } else if (n < 1) { n = 1; input.value = 1; }
 
             const towerA = document.getElementById('towerA');
             const h = Math.max(160, (n * 27) + 60); 
