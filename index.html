@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indução Matemática - Grupo 3</title>
+    <title>Indução Matemática - Projeto Integrador</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
@@ -220,7 +220,7 @@
         <div class="controls">
             <div class="control-group">
                 <label for="sidesSlider">Número de Lados (n): <span id="sidesDisplay" style="color:white; font-size:1.1rem;">3</span></label>
-                <input type="range" id="sidesSlider" min="3" max="20" value="3">
+                <input type="range" id="sidesSlider" min="3" max="26" value="3">
             </div>
             <button class="action-btn btn-green" id="btnInduction">Passo Indutivo (+1 Vértice)</button>
         </div>
@@ -558,7 +558,7 @@
         });
 
         dBtnInduction.addEventListener('click', () => {
-            if (dNum < 20) {
+            if (dNum < 26) {
                 dNum++; dSlider.value = dNum;
                 dIsHighlighting = true; 
                 diagUI(); diagDraw();
